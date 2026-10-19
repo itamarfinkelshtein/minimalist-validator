@@ -1,3 +1,5 @@
+const API_BASE_URL = "http://127.0.0.1:5000";
+
 function serializeNode(element){
     const isSelected = element.classList.contains('selected');
     if(element.classList.contains('lexical-item')){
@@ -140,7 +142,7 @@ const mergeBtn = document.getElementById("merge-btn");
     const item2 = serializeNode(selectedNodes[1]);
     const payload = {items: [item1, item2]};
 
-    fetch("http://127.0.0.1:5000/api/merge", {
+    fetch(`{API_BASE_URL}/api/merge`, {
         method: "POST",
         headers: {
             'Content-Type': "application/json"
@@ -204,7 +206,7 @@ agreeBtn.addEventListener('click', () => {
     const probeNode = selectedNodes[0];
     const payload = {tree: serializeNode(probeNode)};
 
-    fetch("http://127.0.0.1:5000/api/agree", {
+    fetch(`{API_BASE_URL}/api/agree`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -280,7 +282,7 @@ moveBtn.addEventListener('click', () => {
     }
 
     const payload = {tree: serializeNode(rootNode)};
-    fetch("http://127.0.0.1:5000/api/move", {
+    fetch(`{API_BASE_URL}/api/move`, {
         method: "POST",
         headers: {'Content-Type': "application/json"},
         body: JSON.stringify(payload)
@@ -369,7 +371,7 @@ validateBtn.addEventListener('click', () => {
     const payload = {tree: serializedTree}
     console.log("Serialized Tree Payload: ", payload);
 
-    fetch('http://127.0.0.1:5000/api/validate', {
+    fetch(`{API_BASE_URL}/api/validate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
