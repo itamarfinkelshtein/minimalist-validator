@@ -174,7 +174,7 @@ def execute_agree():
     try:
         selected_node = build_tree_from_json(tree_data)
         probe_node = selected_node.left if not selected_node.is_terminal() else selected_node
-        agree(probe = probe_node)
+        goals_found = agree(probe = probe_node)
 
         feat_strings = []
         for f in probe_node.features:
@@ -190,7 +190,8 @@ def execute_agree():
         return jsonify({
             "status": "success",
             "message": f"AGREE SUCESS: Probe '{probe_node.label}' successfully checked its features",
-            "updated_text": updated_text
+            "updated_text": updated_text,
+            "goals": goals_found
         }), 200
     except ValueError as e:
         return jsonify({

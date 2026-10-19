@@ -118,6 +118,24 @@ header {
     overflow-x: auto
 }
 
+/* ==========================================
+   AGREE HIGHLIGHT ANIMATION
+   ========================================== */
+.highlight-agree {
+    animation: agree-flash 2s ease-out;
+}
+
+@keyframes agree-flash {
+    0% { transform: scale(1); box-shadow: 0 0 0 rgba(231, 76, 60, 0); }
+    20% { transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(231, 76, 60, 1);
+        background-color: #ffcbcb !important;
+        color: #c0392b !important; 
+        border-color: #e74c3c !important;
+    }
+    100% { transform: scale(1); box-shadow: 0 0 0 rgba(231, 76, 60, 0); }
+}
+
 .placeholder-text {
     color: #7f8c8d;
     position: absolute;
@@ -129,17 +147,33 @@ header {
 
 .action-btn {
     padding: 1rem;
-    background-color: #27ae60;
     color: white;
     border: none;
     border-radius: 4px;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.1s ease;
 }
 
 .action-btn:hover {
-    background-color: #219150;
+    opacity: 0.9;
+}
+
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+.primary-btn {
+    background-color: #4A90E2; /* Muted blue for core linguistic operations */
+}
+
+.secondary-btn {
+    background-color: #607D8B; /* Slate gray for data exports */
+}
+
+.danger-btn {
+    background-color: #D65A5A; /* Soft red for destructive actions */
 }
 
 /* Selection state for lexical items */
@@ -153,7 +187,7 @@ header {
 /* Control buttons layout */
 .workspace-controls {
     display: flex;
-    justify-content: center;
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-top: 1rem;
 }

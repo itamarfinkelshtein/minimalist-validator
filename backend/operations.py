@@ -40,9 +40,10 @@ def merge(head: Node, complement: Node) -> Node:
 def agree(probe: Node):
     active_features = [f for f in probe.features if f.is_active()]                          # Finding the features which still need to be checked
     if not active_features:                                                                 # (if any)
-        return
+        return []
 
     domain = probe.get_c_command_domain()
+    goals_found = []
 
     for req_feat in active_features:                                                        # Going over all requested features of the node
         goal_found = False
@@ -57,11 +58,13 @@ def agree(probe: Node):
                     req_feat.val = goal_feat.val                                            # Copying the value of the found node into the probe node
                 req_feat.checked = True                                                     # Checking the uninterpretable requested feature
                 print(f"AGREE SUCCESS: '{probe.label}' checked and valued [u{req_feat.type}:{req_feat.val}] against '{potential_goal.label}'")
+                goals_found.append(potential_goal.label)
                 goal_found = True
                 break
 
         if not goal_found:
             raise ValueError(f"AGREE CRASH: '{probe.label}' found no valid goal for [u{req_feat.val}] in its domain")
+    return goals_found
     
 def internal_merge(root: Node, goal: Node) -> Node:
     moved_item = copy.deepcopy(goal)                                                        # Making a deep copy of the goal to merge with the root

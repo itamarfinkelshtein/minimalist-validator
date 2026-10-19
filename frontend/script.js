@@ -1,4 +1,5 @@
-const API_BASE_URL = "https://minimalist-validator.onrender.com";
+const API_BASE_URL = "http://127.0.0.1:5000";                  // should be "https://minimalist-validator.onrender.com"
+
 
 function serializeNode(element){
     const isSelected = element.classList.contains('selected');
@@ -66,6 +67,11 @@ lexicalItems.forEach(item=>{
     item.addEventListener('dragstart', (event)=>{
         console.log("Drag initiated for:", event.target.innerText);
         event.dataTransfer.setData('text/plain', event.target.innerText); //Saving the text in the temporary drag memory
+
+        const categoryClass = Array.from(event.target.classList).find(cls => cls.startsWith('cat-'));
+        if (categoryClass) {
+            event.dataTransfer.setData('text/category', categoryClass);
+        }
     });
 });
 
@@ -78,8 +84,13 @@ canvas.addEventListener('drop', (event) => {
 
     //Creating a duplicate of the dragged node using the data from the drag memory
     const itemText = event.dataTransfer.getData('text/plain');
+    const categoryClass = event.dataTransfer.getData('text/category');
+
     const newNode = document.createElement('div');
     newNode.className = 'lexical-item';
+    if(categoryClass) {
+        newNode.classList.add(categoryClass);
+    }
     
     const labelSpan = document.createElement('span');
     labelSpan.className = "syntax-label";
@@ -142,7 +153,7 @@ const mergeBtn = document.getElementById("merge-btn");
     const item2 = serializeNode(selectedNodes[1]);
     const payload = {items: [item1, item2]};
 
-    fetch(`{API_BASE_URL}/api/merge`, {
+    fetch(`${API_BASE_URL}/api/merge`, {
         method: "POST",
         headers: {
             'Content-Type': "application/json"
@@ -206,7 +217,7 @@ agreeBtn.addEventListener('click', () => {
     const probeNode = selectedNodes[0];
     const payload = {tree: serializeNode(probeNode)};
 
-    fetch(`{API_BASE_URL}/api/agree`, {
+    fetch(`${API_BASE_URL}/api/agree`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -223,20 +234,45 @@ agreeBtn.addEventListener('click', () => {
     .then(data => {
         statusText.innerText = data.message;
         statusText.style.color = "#27ae60";
-        if(data.updated_text) {
-            let headNode;
-            if (probeNode.classList.contains('tree-node')){
-                headNode = probeNode.querySelector('.lexical-item');
-            } else {
-                headNode = probeNode;
-            }
 
-            const labelSpan = headNode.querySelector('.syntax-label');
+        // 1. Isolate the exact visual block for the Probe (the T head, not the TP container)
+        let visualProbe = probeNode;
+        if (probeNode.classList.contains('tree-node')) {
+            visualProbe = probeNode.querySelector('.lexical-item');
+        }
+
+        // Update the text feature values
+        if (data.updated_text) {
+            const labelSpan = visualProbe.querySelector('.syntax-label');
             if (labelSpan) {
                 labelSpan.innerText = data.updated_text;
             } else {
-            headNode.innerText = data.updated_text;
+                visualProbe.innerText = data.updated_text;
             }
+        }
+        
+        // 2. Isolate the exact visual block for the Goal and trigger the flash
+        if (data.goals && data.goals.length > 0) {
+            const allLabels = Array.from(document.querySelectorAll('.node-label, .syntax-label'));
+            const goalLabelElement = allLabels.find(el => el.innerText.includes(data.goals[0]));
+            
+            let visualGoal = null;
+            if (goalLabelElement) {
+                // If the goal is a terminal node, grab its block. If it's a projection, grab the purple label itself.
+                visualGoal = goalLabelElement.classList.contains('syntax-label') 
+                             ? goalLabelElement.closest('.lexical-item') 
+                             : goalLabelElement;
+            }
+            
+            // Apply the animation class to the specific colored blocks
+            visualProbe.classList.add('highlight-agree');
+            if (visualGoal) visualGoal.classList.add('highlight-agree');
+            
+            // Remove the class after the 1.5s animation finishes
+            setTimeout(() => {
+                visualProbe.classList.remove('highlight-agree');
+                if (visualGoal) visualGoal.classList.remove('highlight-agree');
+            }, 2000);
         }
 
         probeNode.classList.remove('selected');
@@ -282,7 +318,7 @@ moveBtn.addEventListener('click', () => {
     }
 
     const payload = {tree: serializeNode(rootNode)};
-    fetch(`{API_BASE_URL}/api/move`, {
+    fetch(`${API_BASE_URL}/api/move`, {
         method: "POST",
         headers: {'Content-Type': "application/json"},
         body: JSON.stringify(payload)
@@ -371,7 +407,7 @@ validateBtn.addEventListener('click', () => {
     const payload = {tree: serializedTree}
     console.log("Serialized Tree Payload: ", payload);
 
-    fetch(`{API_BASE_URL}/api/validate`, {
+    fetch(`${API_BASE_URL}/api/validate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -590,4 +626,28 @@ exportLatexBtn.addEventListener('click', () => {
         statusText.innerText = "CRASH: Failed to copy to clipboard.";
         statusText.style.color = "red";
     });
+});
+
+// ==========================================
+// KEYBOARD SHORTCUTS
+// ==========================================
+document.addEventListener('keydown', (event) => {
+    // Guard clause: Do not trigger shortcuts if the user is typing in a word input field
+    if (event.target.tagName.toLowerCase() === 'input') {
+        return;
+    }
+
+    const key = event.key.toLowerCase();
+    
+    if (event.altKey && key === 'm') {
+        document.getElementById('merge-btn').click();
+    } else if (event.altKey && key === 'a') {
+        document.getElementById('agree-btn').click();
+    } else if (event.altKey && key === 'i') {
+        document.getElementById('move-btn').click();
+    } else if (event.altKey && key === 'v') {
+        document.getElementById('validate-btn').click();
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        document.getElementById('delete-btn').click();
+    }
 });
