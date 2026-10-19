@@ -1,0 +1,231 @@
+/* Reset basic spacing */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f6f9;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-x: hidden;
+}
+
+header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.workspace {
+    display: flex;
+    flex: 1;
+    padding: 2rem;
+    gap: 2rem;
+    max-width: 100vw;
+    box-sizing: border-box;
+}
+
+/* Sidebar for Lexicon */
+.lexicon-panel {
+    width: 250px;
+    min-height: 250px;
+    flex-shrink: 0;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#lexicon-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.lexical-item {
+    background-color: #3498db;
+    color: white;
+    padding: 0.8rem;
+    border-radius: 4px;
+    text-align: center;
+    cursor: grab;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    min-width: 90px;
+}
+
+/* The actual word input field */
+.word-input {
+    width: 80%;
+    padding: 3px;
+    border: none;
+    border-radius: 3px;
+    text-align: center;
+    font-size: 0.9rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+.word-input:focus {
+    outline: 2px solid #2c3e50;
+    background-color: white;
+}
+
+/* Main drag-and-drop area */
+.derivation-board {
+    flex: 1;
+    min-width: 0;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+#canvas {
+    flex: 1;
+    border: 2px dashed #bdc3c7;
+    border-radius: 8px;
+    margin: 1rem 0;
+    display: flex;
+    justify-content: safe center;
+    align-items: flex-end;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-bottom: 2rem;
+    gap: 15px;
+    position: relative;
+    background-color: #fafbfc;
+    min-height: 300px;
+    max-width: 100%;
+    width: 100%;
+    overflow-x: auto
+}
+
+.placeholder-text {
+    color: #7f8c8d;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.action-btn {
+    padding: 1rem;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.action-btn:hover {
+    background-color: #219150;
+}
+
+/* Selection state for lexical items */
+.lexical-item.selected, .tree-node.selected {
+    box-shadow: 0 0 10px #f1c40f;
+    border: 2px solid #f1c40f;
+    transform: scale(1.05);
+    transition: all 0.2s ease;
+}
+
+/* Control buttons layout */
+.workspace-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* --- Visual Tree Rendering --- */
+
+/* The animation sequence: shifting from transparent and slightly lowered to fully opaque and settled */
+@keyframes fadeInTree {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* The main wrapper for a merged syntactic object */
+.tree-node {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    animation: fadeInTree 0.5s ease-out forwards;
+    flex-shrink: 0;
+    min-width: max-content;
+}
+
+/* The parent projection label (e.g., "VP") */
+.node-label {
+    background-color: #8e44ad; /* A distinct purple to separate it from terminal items */
+    color: white;
+    padding: 0.5rem 2rem;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* The container that holds the child nodes side-by-side */
+.node-children {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+.trace-node {
+    opacity: 0.4;
+    filter: grayscale(60%);
+    pointer-events: none;
+}
+
+.category-header {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #bdc3c7;
+    margin-bottom: 0.5rem;
+}
+
+.category-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1rem;
+}
+
+/* Category Color Coding */
+.cat-n { background-color: #3498db; }    /* Blue */
+.cat-d { background-color: #2980b9; }    /* Darker Blue */
+.cat-verb { background-color: #e67e22; } /* Orange */
+.cat-v { background-color: #d35400; }    /* Darker Orange */
+.cat-t { background-color: #2ecc71; }    /* Green */
+.cat-c { background-color: #9b59b6; }    /* Purple */

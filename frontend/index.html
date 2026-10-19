@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Minimalist Program Validator</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <header>
+            <h1>Minimal Program Validator</h1>
+            <div id="status-indicator">Backend Status: <span id="status-text">Checking...</span></div>
+        </header>
+
+        <main class="workspace">
+            <aside class="lexicon-panel">
+                <h2>Lexicon</h2>
+                <div id="lexicon-container">
+                    <details open>
+                        <summary class="category-header">Nouns & Determiners</summary>
+                        <div class="category-grid">
+                            <div class="lexical-item cat-d" draggable="true">D [uN]</div>
+                            <div class="lexical-item cat-d" draggable="true">DP [3sg]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [1sg]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [3pl]</div>
+                        </div>
+                    </details>
+
+                    <details open>
+                        <summary class="category-header">Verbs & Light v</summary>
+                        <div class="category-grid">
+                            <div class="lexical-item cat-v" draggable="true">v [uV, uD]</div>
+                            <div class="lexical-item cat-verb" draggable="true">V [uD]</div>
+                            <div class="lexical-item cat-verb" draggable="true">V [uC]</div>
+                        </div>
+                    </details>
+
+                    <details open>
+                        <summary class="category-header">Tense & Comp</summary>
+                        <div class="category-grid">
+                            <div class="lexical-item cat-t" draggable="true">T [uφ, uv]</div>
+                            <div class="lexical-item cat-c" draggable="true">C [uT]</div>
+                        </div>
+                    </details>
+                </div>
+            </aside>
+
+            <section class="derivation-board">
+                <h2>Derivation Board</h2>
+                <div id="canvas">
+                    <p class="placeholder-text">Drag lexical items here to start external merge</p>
+                </div>
+                <div class="workspace-controls">
+                    <button id="merge-btn" class="action-btn">Merge</button>
+                    <button id="agree-btn" class="action-btn" style="background-color: #f39c12;">Agree</button>
+                    <button id="move-btn" class="action-btn" style="background-color: #9b59b6;">Internal Merge (Move)</button>
+                    <button id="validate-btn" class="action-btn" style="background-color: #2980b9;">Validate Logical Form</button>
+                    <button id="delete-btn" class="action-btn" style="background-color: #c0392b;">Delete / Unmerge</button>
+                    <button id="reset-btn" class="action-btn" style="background-color: #e74c3c;">Reset</button>
+
+                    <button id="export-json-btn" class="action-btn" style="background-color: #34495e;">Export JSON</button>
+                    <button id="export-latex-btn" class="action-btn" style="background-color: #7f8c8d;">Copy LaTeX</button>
+                </div>
+            </section>
+        </main>
+        <script src="script.js"></script>
+    </body>
+</html>
