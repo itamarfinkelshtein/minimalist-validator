@@ -11,7 +11,7 @@ The application translates abstract syntactic operations into formal graph-theor
 The engine bridges formal linguistic theory with computer science data structures:
 
 * **Syntactic Objects as Graphs**: Trees are modeled as binary Directed Acyclic Graphs (DAGs) using a custom `Node` class.
-* **External Merge ($O(1)$)**: Merges two independent roots into a binary branching structure. Selectional features (e.g., `[uD]`, `[uv]`, `[uC]`) are evaluated and checked strictly under sisterhood conditions.
+* **External Merge**: Merges two independent roots into a binary branching structure. Selectional features (e.g., `[uD]`, `[uv]`, `[uC]`) are evaluated and checked strictly under sisterhood conditions.
 * **Internal Merge / Move**: Clones an extraction goal into the root's Specifier position. The base copy is replaced with an inert structural trace (`_t`) that retains its categorical identity for selection while shedding A-position features to prevent intervention effects.
 * **Agree & C-Command Traversal**: Probes initiate a Depth-First Search (DFS) strictly over their c-command domain (sister's descendants). The traversal enforces strict structural hierarchy: Specifiers precede Complements to preserve Relativized Minimality.
 * **Feature Percolation**: Models Determiner Phrases (DPs) where interpretable $\varphi$-features on lexical nouns percolate up to the maximal projection of $D$ to be visible for higher agreement probes.
@@ -81,7 +81,7 @@ Open `frontend/index.html` directly in your browser, or serve it via a simple st
 2. Merge `v [uV, uD]` with `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]`.
 3. Merge `DP [3sg]` (Subject) with `vP` $\rightarrow$ Forms full transitive `vP`.
 4. Merge `T [uφ, uv]` with `vP` $\rightarrow$ Forms `TP`.
-5. Run **Agree** on `T` $\rightarrow$ Probes down, values $\varphi$-features against the subject in Spec-$v$.
+5. Run **Agree** on `T` $\rightarrow$ Probes down, values $\varphi$-features against the subject in SPEC `vP`.
 6. Run **Internal Merge** on the subject $\rightarrow$ Elevates subject to Spec-TP, leaving a trace `DP_t`.
 7. **Validate LF** $\rightarrow$ Converges.
 
