@@ -7,6 +7,7 @@ class Node:
         self.right = right                      # Pointer to the right child
         self.label = label
         self.parent = parent                      # The node's label (e.g., 'VP', 'N')
+        self.is_trace = False
 
     def is_terminal(self):                      # Checking if the node hasn't any children
         return self.left is None and self.right is None

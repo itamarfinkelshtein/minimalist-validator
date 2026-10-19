@@ -38,32 +38,42 @@ def merge(head: Node, complement: Node) -> Node:
     return parent_node
 
 def agree(probe: Node):
-    active_features = [f for f in probe.features if f.is_active()]                          # Finding the features which still need to be checked
-    if not active_features:                                                                 # (if any)
+    active_features = [f for f in probe.features if f.is_active()]
+    if not active_features:
         return []
-
+        
     domain = probe.get_c_command_domain()
     goals_found = []
-
-    for req_feat in active_features:                                                        # Going over all requested features of the node
+    
+    for req_feat in active_features:
         goal_found = False
-        for potential_goal in domain:                                                       # Going over all potential nodes in the C-domain
-            matching_features = [f for f in potential_goal.features 
-                                if f.type == req_feat.type                                  # A matching feature matches the requested in type
-                                and f.interpretable]                                        # and is interpretable
-            if matching_features:
-                goal_feat = matching_features[0]                                            # Should be only one
+        
+        for potential_goal in domain:
+            # 1. Find ANY feature of the requested type (e.g., "phi") on the current node
+            matching_type_features = [f for f in potential_goal.features if f.type == req_feat.type]
+            
+            if matching_type_features:
+                # 2. We hit the closest node with the feature. Is it a valid, interpretable goal?
+                valid_goals = [f for f in matching_type_features if f.interpretable]
                 
-                if req_feat.val == None:
-                    req_feat.val = goal_feat.val                                            # Copying the value of the found node into the probe node
-                req_feat.checked = True                                                     # Checking the uninterpretable requested feature
-                print(f"AGREE SUCCESS: '{probe.label}' checked and valued [u{req_feat.type}:{req_feat.val}] against '{potential_goal.label}'")
-                goals_found.append(potential_goal.label)
-                goal_found = True
-                break
-
+                if valid_goals:
+                    # Success: Value the Probe
+                    goal_feat = valid_goals[0]
+                    if req_feat.val == None:
+                        req_feat.val = goal_feat.val
+                    req_feat.checked = True
+                    
+                    print(f"AGREE SUCCESS: '{probe.label}' checked and valued [u{req_feat.type}:{req_feat.val}] against '{potential_goal.label}'")
+                    goals_found.append(potential_goal.label)
+                    goal_found = True
+                    break
+                else:
+                    # Defective Intervention: Node has the feature type, but cannot value the Probe.
+                    raise ValueError(f"AGREE CRASH: Relativized Minimality violation. '{potential_goal.label}' intervenes but cannot value the Probe.")
+                    
         if not goal_found:
             raise ValueError(f"AGREE CRASH: '{probe.label}' found no valid goal for [u{req_feat.val}] in its domain")
+            
     return goals_found
     
 def internal_merge(root: Node, goal: Node) -> Node:
@@ -71,6 +81,7 @@ def internal_merge(root: Node, goal: Node) -> Node:
     
     goal.label = goal.label + "_t"                                                          # The original goal turns into a trace
     goal.features = []
+    goal.is_trace = True
 
     parent_node = Node(                                                                     # Merging the root and the moved item (in SPEC position)
         features = root.features,

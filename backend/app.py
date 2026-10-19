@@ -46,34 +46,45 @@ def find_target(node: Node):
     
 
 
-# Recursively turning json tree files into a tree object (returning the root node)
 def build_tree_from_json(node_dict: dict) -> Node:
     if node_dict.get('type') == 'terminal':
-        node = parse_node(node_dict['text'])                            # The use of [] ensures error throw in case node_dict does not have a 'text' field
+        node = parse_node(node_dict['text'])
+        
     if node_dict.get('type') == 'non-terminal':
         left_child = build_tree_from_json(node_dict['left'])
         right_child = build_tree_from_json(node_dict['right'])
-        try:
-            node = merge(head = left_child, complement = right_child)
-        except ValueError:
-            try:
-                node = merge(head = right_child, complement = left_child)
+        expected_label = node_dict.get('label', '')
+        
+        # 1. Identify Internal Merge (Movement)
+        # Movement doesn't check selection features in this model; it just projects the target's exact label (e.g., TP -> TP).
+        if expected_label == right_child.label:
+            node = Node(
+                features=right_child.features,
+                left=left_child,
+                right=right_child,
+                label=expected_label
+            )
+            left_child.parent = node
+            right_child.parent = node
+        else:
+            # 2. External Merge (Strict Directionality)
+            # Compare the base label (stripping 'P') to figure out which child is the theoretical head
+            base_expected = expected_label.replace('P', '')
+            base_left = left_child.label.replace('P', '')
+            
+            if base_expected == base_left:
+                node = merge(head=left_child, complement=right_child)
+            else:
+                node = merge(head=right_child, complement=left_child)
+                # Preserve standard tree geometry (Specifier on left, Head on right)
                 node.left = left_child
                 node.right = right_child
-            except ValueError:
-                node = Node(
-                    features=right_child.features,
-                    left=left_child,
-                    right=right_child,
-                    label=node_dict.get('label', right_child.label)
-                )
-                left_child.parent = node
-                right_child.parent = node
-
-            if "_t" in node_dict.get('label', ''):
-                node.label = node_dict['label']
-                node.features = [f for f in node.features if f.type == "category"]
-
+                
+        # Handle structural traces using our new boolean property
+        if node_dict.get('isTrace', False):
+            node.is_trace = True
+            node.features = [f for f in node.features if f.type == "category"]
+            
     node.is_target = node_dict.get('selected', False)
     return node
 

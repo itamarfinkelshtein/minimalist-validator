@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:5000";                  // should be "https://minimalist-validator.onrender.com"
+const API_BASE_URL = "https://minimalist-validator.onrender.com";
 
 
 function serializeNode(element){
