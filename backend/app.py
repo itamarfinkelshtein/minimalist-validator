@@ -1,6 +1,6 @@
 from tree import Node
 from lexicon import Feature
-from operations import merge, agree, internal_merge
+from operations import merge, adjoin, agree, internal_merge
 from validator import validate_derivation
 
 from flask import Flask, jsonify, request
@@ -20,15 +20,20 @@ def check_status():
 # Turning the raw feature string into a Feature object
 def parse_feature(raw_feat: str) -> Feature:
     raw = raw_feat.strip()
-    if raw.startswith("uφ:") or raw.startswith("uphi:"):                                             # An uninterpretable feature (e.g., uD or uV)
+    
+    # Safely evaluating the Greek phi symbol
+    if raw.startswith("uφ:") or raw.startswith("uphi:"):
         val = raw.split(":")[1]
         feat = Feature(type="phi", val=val, interpretable=False)
         feat.checked = True
         return feat
+        
     if raw == "uφ" or raw == "uphi":
         return Feature(type="phi", val=None, interpretable=False)
+        
     if raw.startswith("u"):
         return Feature(type="select", val=raw[1:], interpretable=False)
+        
     return Feature(type="phi", val=raw, interpretable=True)
 
 def find_target(node: Node):
@@ -44,7 +49,12 @@ def find_target(node: Node):
             return found
     return None
     
-
+def can_merge(head: Node, comp: Node) -> bool:
+    reqs = [f for f in head.features if f.type == "select" and f.is_active()]
+    cats = [f for f in comp.features if f.type == "category"]
+    if reqs and cats:
+        return reqs[0].val == cats[0].val
+    return False
 
 def build_tree_from_json(node_dict: dict) -> Node:
     if node_dict.get('type') == 'terminal':
@@ -55,39 +65,35 @@ def build_tree_from_json(node_dict: dict) -> Node:
         right_child = build_tree_from_json(node_dict['right'])
         expected_label = node_dict.get('label', '')
         
-        # 1. Identify Internal Merge (Movement)
-        # Movement doesn't check selection features in this model; it just projects the target's exact label (e.g., TP -> TP).
-        if expected_label == right_child.label:
-            node = Node(
-                features=right_child.features,
-                left=left_child,
-                right=right_child,
-                label=expected_label
-            )
+        # Feature-Driven Structural Deduction
+        # If a node actively selects the other and categories match, it is External Set-Merge.
+        if can_merge(left_child, right_child):
+            node = merge(head=left_child, complement=right_child)
+        elif can_merge(right_child, left_child):
+            node = merge(head=right_child, complement=left_child)
+            # Preserve standard canvas spatial geometry
+            node.left = left_child
+            node.right = right_child
+        else:
+            # Internal Merge (Move) or Adjunction (Pair-Merge)
+            # Neither satisfies selection features; project the target's geometry and link memory references
+            if expected_label == right_child.label:
+                node = Node(features=list(right_child.features), left=left_child, right=right_child, label=expected_label)
+            elif expected_label == left_child.label:
+                node = Node(features=list(left_child.features), left=left_child, right=right_child, label=expected_label)
+            else:
+                raise ValueError(f"Cannot structurally combine '{left_child.label}' and '{right_child.label}'")
+            
             left_child.parent = node
             right_child.parent = node
-        else:
-            # 2. External Merge (Strict Directionality)
-            # Compare the base label (stripping 'P') to figure out which child is the theoretical head
-            base_expected = expected_label.replace('P', '')
-            base_left = left_child.label.replace('P', '')
             
-            if base_expected == base_left:
-                node = merge(head=left_child, complement=right_child)
-            else:
-                node = merge(head=right_child, complement=left_child)
-                # Preserve standard tree geometry (Specifier on left, Head on right)
-                node.left = left_child
-                node.right = right_child
-                
-        # Handle structural traces using our new boolean property
+        # Handle structural traces using our boolean property
         if node_dict.get('isTrace', False):
             node.is_trace = True
             node.features = [f for f in node.features if f.type == "category"]
             
     node.is_target = node_dict.get('selected', False)
     return node
-
 
 @app.route('/api/validate', methods = ['POST'])                         # Getting data from frontend (decorated with POST url)
 def validate_workspace():
@@ -102,12 +108,12 @@ def validate_workspace():
         }), 400
     try:
         derived_root = build_tree_from_json(tree_data)
-        converges = validate_derivation(derived_root)
+        converges, crash_log = validate_derivation(derived_root)
 
         if converges:
             message = "SUCCESS: The derivation converges at Logical Form. All uninterpretable features are checked."
         else:
-            message = "FAILURE: The derivation crashed at LF. Uninterpretable features survived."
+            message = f"FAILURE: The derivation crashed at LF. Uninterpretable features survived. Survived features: {crash_log}"
 
         return jsonify({
             "status": "success",
@@ -119,7 +125,6 @@ def validate_workspace():
             "status": "error",
             "message": f"CRASH: {str(e)}"
         }), 400
-
 
 def parse_node(item_text: str) -> Node:
     if "_t" in item_text:
@@ -171,6 +176,42 @@ def execute_merge():
             "message": f"CRASH: {str(e)}"
         }), 400
 
+@app.route('/api/adjoin', methods = ['POST'])
+def execute_adjoin():
+    payload = request.get_json()
+    items = payload.get('items', [])
+    if len(items) != 2:
+        return jsonify({"status": "error", "message": "CRASH: Adjoin requires exactly two items"}), 400
+        
+    try:
+        # Items are always received in left-to-right canvas order
+        left_node = build_tree_from_json(items[0])
+        right_node = build_tree_from_json(items[1])
+        
+        # Safely strip projection tags to evaluate base categories
+        base_left = left_node.label[:-1] if (left_node.label.endswith('P') and len(left_node.label) > 1) else left_node.label
+        base_right = right_node.label[:-1] if (right_node.label.endswith('P') and len(right_node.label) > 1) else right_node.label
+
+        # Deduce the Target vs Adjunct based on standard linguistic categories
+        adjunct_categories = ["Adv", "A", "P"]
+        
+        if base_right in adjunct_categories and base_left not in adjunct_categories:
+            target = left_node   # Right-Adjunction (e.g., VP + PP)
+        elif base_left in adjunct_categories and base_right not in adjunct_categories:
+            target = right_node  # Left-Adjunction (e.g., Adv + vP)
+        else:
+            target = right_node  # Default fallback
+            
+        adjoined_node = adjoin(target=target, left_node=left_node, right_node=right_node)
+        
+        return jsonify({
+            "status": "success",
+            "message": f"ADJOIN SUCCESS: Formed two-segment category [{adjoined_node.label}]",
+            "parent_label": adjoined_node.label
+        }), 200
+    except ValueError as e:
+        return jsonify({"status": "error", "message": f"CRASH: {str(e)}"}), 400
+    
 @app.route('/api/agree', methods=['POST'])
 def execute_agree():
     payload = request.get_json()
@@ -196,7 +237,7 @@ def execute_agree():
             elif not f.interpretable:
                 feat_strings.append(f"u{f.val}")
             else:
-                feat_strings.append(f.val)
+                feat_strings.append(f.val)         
         updated_text = f"{probe_node.label} [{', '.join(feat_strings)}]"
         return jsonify({
             "status": "success",

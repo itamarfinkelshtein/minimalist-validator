@@ -26,7 +26,7 @@ def merge(head: Node, complement: Node) -> Node:
         projected_features.extend(noun_phis)
 
     # Creating the parent node
-    projected_label = head.label if head.label.endswith('P') else head.label + "P"
+    projected_label = head.label if (head.label.endswith('P') and len(head.label) > 1) else head.label + "P"
     parent_node = Node(
         features = projected_features,
         left = head,
@@ -35,6 +35,22 @@ def merge(head: Node, complement: Node) -> Node:
         )
     head.parent = parent_node
     complement.parent = parent_node
+    return parent_node
+
+def adjoin(target: Node, left_node: Node, right_node: Node) -> Node:
+    # Use a shallow copy! Create a new list, but keep references to the exact same Feature objects.
+    # If a feature gets checked on this higher segment, it updates the original head simultaneously.
+    projected_features = list(target.features)
+    
+    parent_node = Node(
+        features = projected_features,
+        left = left_node,
+        right = right_node,
+        label = target.label
+    )
+    
+    left_node.parent = parent_node
+    right_node.parent = parent_node
     return parent_node
 
 def agree(probe: Node):

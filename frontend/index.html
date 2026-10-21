@@ -18,10 +18,29 @@
                     <details open>
                         <summary class="category-header">Nouns & Determiners</summary>
                         <div class="category-grid">
-                            <div class="lexical-item cat-d" draggable="true">D [uN]</div>
                             <div class="lexical-item cat-d" draggable="true">DP [3sg]</div>
+                            <div class="lexical-item cat-d" draggable="true">D [uN]</div>
                             <div class="lexical-item cat-n" draggable="true">N [1sg]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [1pl]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [2sg]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [2pl]</div>
+                            <div class="lexical-item cat-n" draggable="true">N [3sg]</div>
                             <div class="lexical-item cat-n" draggable="true">N [3pl]</div>
+                        </div>
+                    </details>
+
+                    <details open>
+                        <summary class="category-header">Adjectives & Adverbs</summary>
+                        <div class="category-grid">
+                            <div class="lexical-item cat-adj" draggable="true">A</div>
+                            <div class="lexical-item cat-adv" draggable="true">Adv</div>
+                        </div>
+                    </details>
+                    
+                    <details open>
+                        <summary class="category-header">Prepositions</summary>
+                        <div class="category-grid">
+                            <div class="lexical-item cat-p" draggable="true">P [uD]</div>
                         </div>
                     </details>
 
@@ -50,15 +69,26 @@
                     <p class="placeholder-text">Drag lexical items here to start external merge</p>
                 </div>
                 <div class="workspace-controls">
-                    <button id="merge-btn" class="action-btn primary-btn">Merge</button>
-                    <button id="agree-btn" class="action-btn primary-btn">Agree</button>
-                    <button id="move-btn" class="action-btn primary-btn">Internal Merge (Move)</button>
-                    <button id="validate-btn" class="action-btn primary-btn">Validate Logical Form</button>
+                    <!-- Row 1: Core Operations -->
+                    <div class="control-row">
+                        <button id="merge-btn" class="action-btn primary-btn">Merge</button>
+                        <button id="adjoin-btn" class="action-btn primary-btn">Adjoin</button>
+                        <button id="agree-btn" class="action-btn primary-btn">Agree</button>
+                        <button id="move-btn" class="action-btn primary-btn">Internal Merge (Move)</button>
+                    </div>
                     
-                    <button id="delete-btn" class="action-btn danger-btn">Delete / Unmerge</button>
-                    <button id="reset-btn" class="action-btn danger-btn">Reset</button>
-                    <button id="export-json-btn" class="action-btn secondary-btn">Export JSON</button>
-                    <button id="export-latex-btn" class="action-btn secondary-btn">Copy LaTeX</button>
+                    <!-- Row 2: Destructive Actions -->
+                    <div class="control-row">
+                        <button id="delete-btn" class="action-btn danger-btn">Delete / Unmerge</button>
+                        <button id="reset-btn" class="action-btn danger-btn">Reset</button>
+                    </div>
+
+                    <!-- Row 3: Validation & Exports -->
+                    <div class="control-row">
+                        <button id="validate-btn" class="action-btn secondary-btn">Validate Logical Form</button>
+                        <button id="export-json-btn" class="action-btn secondary-btn">Export JSON</button>
+                        <button id="export-latex-btn" class="action-btn secondary-btn">Copy LaTeX</button>
+                    </div>
                 </div>
             </section>
         </main>

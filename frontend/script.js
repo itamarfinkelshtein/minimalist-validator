@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://minimalist-validator.onrender.com";
+const API_BASE_URL = "http://127.0.0.1:5000";           // Should be "https://minimalist-validator.onrender.com"
 
 
 function serializeNode(element){
@@ -197,6 +197,65 @@ const mergeBtn = document.getElementById("merge-btn");
         statusText.style.color = "red";
     })
  })
+
+// ==========================================
+// ADJOIN BUTTON
+// ==========================================
+const adjoinBtn = document.getElementById("adjoin-btn");
+
+adjoinBtn.addEventListener('click', () => {
+    const selectedNodes = document.querySelectorAll('.lexical-item.selected, .tree-node.selected');
+    if(selectedNodes.length != 2){
+        statusText.innerText = "CRASH: Adjoin requires exactly two items (Select the Adjunct first, then the Target).";
+        statusText.style.color = "red";
+        return;
+    }
+
+    const item1 = serializeNode(selectedNodes[0]); // Adjunct
+    const item2 = serializeNode(selectedNodes[1]); // Target
+    const payload = {items: [item1, item2]};
+
+    fetch(`${API_BASE_URL}/api/adjoin`, {
+        method: "POST",
+        headers: { 'Content-Type': "application/json" },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        return data;
+    })
+    .then(data => {
+        statusText.innerText = data.message;
+        statusText.style.color = "#27ae60";
+
+        const treeNode = document.createElement('div');
+        treeNode.className = "tree-node";
+        
+        const nodeLabel = document.createElement('div');
+        nodeLabel.className = "node-label";
+        nodeLabel.innerText = data.parent_label;
+        
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = "node-children";
+        
+        const firstNode = selectedNodes[0];
+        const canvas = document.getElementById('canvas');
+        canvas.insertBefore(treeNode, firstNode);
+        
+        selectedNodes.forEach(node => {
+            node.classList.remove('selected');
+            childrenContainer.appendChild(node);
+        });
+        
+        treeNode.appendChild(nodeLabel);
+        treeNode.appendChild(childrenContainer);
+    })
+    .catch(error => {
+        statusText.innerText = error.message;
+        statusText.style.color = "red";
+    });
+});
 
 /**
  * AGREE BUTTON
@@ -641,6 +700,8 @@ document.addEventListener('keydown', (event) => {
     
     if (event.altKey && key === 'm') {
         document.getElementById('merge-btn').click();
+    } else if (event.altKey && key == 'j') {
+        document.getElementById('adjoin-btn').click();
     } else if (event.altKey && key === 'a') {
         document.getElementById('agree-btn').click();
     } else if (event.altKey && key === 'i') {
@@ -650,4 +711,5 @@ document.addEventListener('keydown', (event) => {
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
         document.getElementById('delete-btn').click();
     }
+
 });
