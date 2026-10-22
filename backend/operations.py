@@ -23,7 +23,9 @@ def merge(head: Node, complement: Node) -> Node:
     projected_features = list(head.features)
     if head.label == "D" and complement.label == "N":
         noun_phis =  [f for f in complement.features if f.type == "phi" and f.interpretable]
+        noun_case = [f for f in complement.features if f.type == "case"]
         projected_features.extend(noun_phis)
+        projected_features.extend(noun_case)
 
     # Creating the parent node
     projected_label = head.label if (head.label.endswith('P') and len(head.label) > 1) else head.label + "P"
@@ -54,22 +56,37 @@ def adjoin(target: Node, left_node: Node, right_node: Node) -> Node:
     return parent_node
 
 def agree(probe: Node):
-    active_features = [f for f in probe.features if f.is_active()]
-    if not active_features:
+    # AGREE RESTRICTION: Only uninterpretable phi-features trigger long-distance Agree. 
+    # Selection features (like uD) are strictly for Merge.
+    active_features = [f for f in probe.features if f.is_active() and f.type == "phi"]
+    
+    # Safely determine the inherent Case this probe assigns
+    clean_label = probe.label.split('_')[0]
+    base_label = clean_label[:-1] if (clean_label.endswith('P') and len(clean_label) > 1) else clean_label
+    
+    assignable_case = None
+    if base_label == "T":
+        assignable_case = "nom"
+    elif base_label == "v":
+        assignable_case = "acc"
+    elif base_label == "P":
+        assignable_case = "obl"  # Covers oblique and dative complements
+    elif base_label == "D":
+        assignable_case = "gen"  # Future-proofing for possessive DPs
+        
+    if not active_features and not assignable_case:
         return []
         
     domain = probe.get_c_command_domain()
     goals_found = []
     
+    # 1. Standard Phi-Feature Agreement (T and v)
     for req_feat in active_features:
         goal_found = False
-        
         for potential_goal in domain:
-            # 1. Find ANY feature of the requested type (e.g., "phi") on the current node
             matching_type_features = [f for f in potential_goal.features if f.type == req_feat.type]
             
             if matching_type_features:
-                # 2. We hit the closest node with the feature. Is it a valid, interpretable goal?
                 valid_goals = [f for f in matching_type_features if f.interpretable]
                 
                 if valid_goals:
@@ -78,18 +95,38 @@ def agree(probe: Node):
                     if req_feat.val == None:
                         req_feat.val = goal_feat.val
                     req_feat.checked = True
-                    
                     print(f"AGREE SUCCESS: '{probe.label}' checked and valued [u{req_feat.type}:{req_feat.val}] against '{potential_goal.label}'")
                     goals_found.append(potential_goal.label)
                     goal_found = True
+                    
+                    # CASE REFLEX: Automatically value Case on the goal (and its percolated children)
+                    if assignable_case:
+                        for gf in potential_goal.features:
+                            if gf.type == "case" and not gf.checked:
+                                gf.val = assignable_case
+                                gf.checked = True
+                                print(f"CASE SUCCESS: '{probe.label}' assigned [{assignable_case}] case to '{potential_goal.label}'")
+                        assignable_case = None # Discharge the case so it isn't assigned twice
                     break
                 else:
-                    # Defective Intervention: Node has the feature type, but cannot value the Probe.
                     raise ValueError(f"AGREE CRASH: Relativized Minimality violation. '{potential_goal.label}' intervenes but cannot value the Probe.")
                     
         if not goal_found:
             raise ValueError(f"AGREE CRASH: '{probe.label}' found no valid goal for [u{req_feat.val}] in its domain")
             
+    # 2. Standalone Case Assignment (for P, which assigns case but lacks phi-probes)
+    if assignable_case:
+        for potential_goal in domain:
+            unvalued_case_feats = [f for f in potential_goal.features if f.type == "case" and not f.checked]
+            if unvalued_case_feats:
+                for gf in unvalued_case_feats:
+                    gf.val = assignable_case
+                    gf.checked = True
+                goals_found.append(potential_goal.label)
+                print(f"CASE SUCCESS: '{probe.label}' assigned [{assignable_case}] case to '{potential_goal.label}'")
+                assignable_case = None
+                break
+                
     return goals_found
     
 def internal_merge(root: Node, goal: Node) -> Node:

@@ -30,6 +30,8 @@ def parse_feature(raw_feat: str) -> Feature:
         
     if raw == "uφ" or raw == "uphi":
         return Feature(type="phi", val=None, interpretable=False)
+    if raw.lower() == "ucase":
+            return Feature(type="case", val=None, interpretable=False)
         
     if raw.startswith("u"):
         return Feature(type="select", val=raw[1:], interpretable=False)

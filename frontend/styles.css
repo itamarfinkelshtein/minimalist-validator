@@ -35,7 +35,7 @@ header {
 
 /* Sidebar for Lexicon */
 .lexicon-panel {
-    width: 250px;
+    width: 300px;
     min-height: 250px;
     flex-shrink: 0;
     background: white;
@@ -67,9 +67,8 @@ header {
     align-items: center;
     gap: 5px;
     flex-shrink: 0;
-    width: 90px;
-    height: 60px;
-    overflow: hidden;
+    min-width: 130px;
+    min-height: 85px;
 }
 
 /* The actual word input field */
@@ -265,6 +264,20 @@ header {
     flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 1rem;
+}
+
+/* Scale down items only when they are inside the lexicon sidebar */
+#lexicon-container .lexical-item {
+    min-width: 100px;
+    min-height: 65px;
+    padding: 0.3rem;
+    font-size: 0.85rem;
+}
+
+/* Scale down the input field inside those smaller items */
+#lexicon-container .word-input {
+    font-size: 0.8rem;
+    padding: 2px;
 }
 
 /* Category Color Coding */
