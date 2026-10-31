@@ -1,34 +1,50 @@
 import copy
 from tree import Node
-from lexicon import Feature, LexicalItem
+from lexicon import Feature, is_phrase
 
 def merge(head: Node, complement: Node) -> Node:
-    select_features = [f for f in head.features if f.type == "select" and f.is_active()]    # The categorical feature the head selects
-    cat_features = [f for f in complement.features if f.type == "category"]                 # The categorical feature of the complement
+    """
+    Merging a head X and its complement Y into an XP phrase, checking the head's selectional feature.
 
-    # Ensuring existence of selected feature of the head and categorical feature of the complement
+    Args:
+        head (Node): the head (left node) of the new phrase.
+        complement (Node): the complement (right node) of the new phrase.
+
+    Returns:
+        Node: the XP phrase node, whose children are the head and the complement.
+
+    Raises:
+        ValueError: If there is no match between the head's active selection features and the complement's category features.
+    """
+    
+    # Fetching the head's active selction features and the complement's category feature, and ensuring their existance.
+    select_features = [f for f in head.features if f.type == "select" and f.is_active()]
+    cat_features = [f for f in complement.features if f.type == "category"]
     if not select_features:
         raise ValueError(f"MERGE CRASH: '{head.label}' has no active selection features")
     if not cat_features:
         raise ValueError(f"MERGE CRASH: '{complement.label}' has no categorical feature")
+
     head_req = select_features[0]
     comp_cat = cat_features[0]
 
+    # Checking selection match, and performing the merge (checking and deleting).
     if head_req.val == comp_cat.val:
-        head_req.checked = True                                                             # Checking and deleting the feature
+        head_req.checked = True
         print(f"MERGE SUCCESS: '{head.label}' checked [u{head_req.val}] against '{complement.label}'")
     else:
         raise ValueError(f"MERGE CRASH: '{head.label}' requires [u{head_req.val}], but got '{comp_cat.val}'")
 
+    # Collecting the projected features for the parent XP node (from the head, with phi-feature and case from the complement in case of DP creation).
     projected_features = list(head.features)
-    if head.label == "D" and complement.label == "N":
+    if head.label == "D" and complement.label == "N": #This is a DP
         noun_phis =  [f for f in complement.features if f.type == "phi" and f.interpretable]
         noun_case = [f for f in complement.features if f.type == "case"]
         projected_features.extend(noun_phis)
         projected_features.extend(noun_case)
 
-    # Creating the parent node
-    projected_label = head.label if (head.label.endswith('P') and len(head.label) > 1) else head.label + "P"
+    # Creating the parent node and setting the head and the complement's parent to it.
+    projected_label = head.label if is_phrase(head.label) else head.label + "P"
     parent_node = Node(
         features = projected_features,
         left = head,
@@ -37,12 +53,29 @@ def merge(head: Node, complement: Node) -> Node:
         )
     head.parent = parent_node
     complement.parent = parent_node
+
     return parent_node
 
 def adjoin(target: Node, left_node: Node, right_node: Node) -> Node:
-    # Use a shallow copy! Create a new list, but keep references to the exact same Feature objects.
-    # If a feature gets checked on this higher segment, it updates the original head simultaneously.
-    projected_features = list(target.features)
+    """
+    Adjoins two phrases where one is an adjunct of the other, not checking any feature.
+    
+    Args:
+        target (Node): The node whose features will be projected to the parent phrase node.
+        left_node (Node): The left node of the operation.
+        right_node (Node): The right node of the operation.
+    
+    Returns:
+        Node: The resulting parent node, whose features are inherited from the target node.
+
+    Raises:
+        ValueError: If one of the nodes does not represent a phrase.
+    """
+
+    if not (is_phrase(left_node.label) and is_phrase(right_node.label)):
+        raise ValueError(f"ADJOIN CRASH: both nodes should be phrase nodes.")
+    
+    projected_features = list(target.features)  # Using a shallow copy so feature checkings will affect both the parent and the head nodes.
     
     parent_node = Node(
         features = projected_features,
@@ -56,13 +89,30 @@ def adjoin(target: Node, left_node: Node, right_node: Node) -> Node:
     return parent_node
 
 def agree(probe: Node):
-    # AGREE RESTRICTION: Only uninterpretable phi-features trigger long-distance Agree. 
-    # Selection features (like uD) are strictly for Merge.
+    """
+    Executing the agree operation for the probe node, checkin uninterpretable phi-features and assigning case.
+
+    Traversing the C-command domain to find interpretable phi-features for the probe's active uninterpretable phi-features,
+    and simultaneously assigning case to the goal, based on the probe's category type.
+
+    Args:
+        probe (Node): The node searching an item with uninterpretable phi-features to valuate.
+    
+    Returns:
+        list[str]: A list of the labels of the goals that were successfully found and valued.
+
+    Raises:
+        ValueError: If a Relativized Minimality violation occurs (a defective intervener 
+            is encountered that matches the feature type but cannot value the probe).
+        ValueError: If the probe possesses an active, uninterpretable phi-feature but 
+            no valid goal can be found in its entire c-command domain.
+    """
+    # Collecting the active (uninterpretable and not yet checked) phi-features of the probe.
     active_features = [f for f in probe.features if f.is_active() and f.type == "phi"]
     
     # Safely determine the inherent Case this probe assigns
     clean_label = probe.label.split('_')[0]
-    base_label = clean_label[:-1] if (clean_label.endswith('P') and len(clean_label) > 1) else clean_label
+    base_label = clean_label[:-1] if is_phrase(clean_label) else clean_label
     
     assignable_case = None
     if base_label == "T":
@@ -72,29 +122,30 @@ def agree(probe: Node):
     elif base_label == "P":
         assignable_case = "obl"  # Covers oblique and dative complements
     elif base_label == "D":
-        assignable_case = "gen"  # Future-proofing for possessive DPs
+        assignable_case = "gen"  # For possessive DPs
         
-    if not active_features and not assignable_case:
+    if not active_features and not assignable_case: # The probe does not need any phi-features and cannot assign case.
         return []
-        
+
+    # Looking for a goal to agree with.    
     domain = probe.get_c_command_domain()
     goals_found = []
     
     # 1. Standard Phi-Feature Agreement (T and v)
     for req_feat in active_features:
         goal_found = False
-        for potential_goal in domain:
-            matching_type_features = [f for f in potential_goal.features if f.type == req_feat.type]
+        for potential_goal in domain: # Important: The order of probing is Pre-Order to reflect the true order of probing in minimalist theory.
+            matching_type_features = [f for f in potential_goal.features if f.type == req_feat.type] # Checking if the potential goal's phi-feature match the features the probe needs.
             
             if matching_type_features:
-                valid_goals = [f for f in matching_type_features if f.interpretable]
+                valid_goals = [f for f in matching_type_features if f.interpretable] # Checking that the matched feature is also interpretable (and therefore is a phi-feature)
                 
                 if valid_goals:
                     # Success: Value the Probe
-                    goal_feat = valid_goals[0]
                     if req_feat.val == None:
-                        req_feat.val = goal_feat.val
+                        req_feat.val = valid_goals[0].val
                     req_feat.checked = True
+                    
                     print(f"AGREE SUCCESS: '{probe.label}' checked and valued [u{req_feat.type}:{req_feat.val}] against '{potential_goal.label}'")
                     goals_found.append(potential_goal.label)
                     goal_found = True
@@ -107,7 +158,7 @@ def agree(probe: Node):
                                 gf.checked = True
                                 print(f"CASE SUCCESS: '{probe.label}' assigned [{assignable_case}] case to '{potential_goal.label}'")
                         assignable_case = None # Discharge the case so it isn't assigned twice
-                    break
+                    break # Continue looking for a match for the next requested feature.
                 else:
                     raise ValueError(f"AGREE CRASH: Relativized Minimality violation. '{potential_goal.label}' intervenes but cannot value the Probe.")
                     
@@ -130,51 +181,31 @@ def agree(probe: Node):
     return goals_found
     
 def internal_merge(root: Node, goal: Node) -> Node:
-    moved_item = copy.deepcopy(goal)                                                        # Making a deep copy of the goal to merge with the root
+    """
+    Creating a copy of the node in goal position, merging it with the root node in SPEC position, and turning the original node to a trace.
+
+    Parameters:
+        root (Node): The node (in complement position) to be merged with the moved item.
+        goal (Node): The node to be copied to SPEC position and turn to a trace.
     
-    goal.label = goal.label + "_t"                                                          # The original goal turns into a trace
+    Returns:
+        Node: The parent phrase node, whose children are the copy of the goal and the root.
+    """
+    moved_item = copy.deepcopy(goal)    # Making a deep copy of the goal to merge with the root.
+    
+    # Turning the original goal to a trace
+    goal.label = goal.label + "_t"
     goal.features = []
     goal.is_trace = True
 
-    parent_node = Node(                                                                     # Merging the root and the moved item (in SPEC position)
+    # Merging the moved item (in SPEC position) and the root (in complement position) and establishing parent pointers.
+    parent_node = Node(
         features = root.features,
         left = moved_item,
         right = root,
         label = root.label
     )
-    moved_item.parent = parent_node                                                         # Establishing parent pointers
+    moved_item.parent = parent_node
     root.parent = parent_node
 
     return parent_node
-  
-if __name__ == "__main__":
-    from backend.tree import Node
-    from backend.lexicon import Feature
-    
-    # 1. Build the DP (The Goal to be moved)
-    dp_cat = Feature(type="category", val="D", interpretable=True)
-    dp_node = Node(features=[dp_cat], label="DP")
-    
-    # 2. Build the V and External Merge with DP
-    v_cat = Feature(type="category", val="V", interpretable=True)
-    v_select = Feature(type="select", val="D", interpretable=False)
-    v_node = Node(features=[v_cat, v_select], label="V")
-    vp_node = merge(head=v_node, complement=dp_node)
-    
-    # 3. Build T and External Merge with VP
-    t_cat = Feature(type="category", val="T", interpretable=True)
-    t_select = Feature(type="select", val="V", interpretable=False)
-    t_node = Node(features=[t_cat, t_select], label="T")
-    tp_node = merge(head=t_node, complement=vp_node)
-    
-    # 4. Trigger Internal Merge (Move)
-    print("\n--- Triggering Internal Merge (Move) ---")
-    final_tree = internal_merge(root=tp_node, goal=dp_node)
-    
-    # 5. Verify the Structure
-    print(f"The new root is: {final_tree.label}")
-    print(f"The Specifier (left child) is: {final_tree.left.label}")
-    
-    # Let's extract all the terminal leaves to see if the trace was left behind!
-    leaves = final_tree.get_leaves()
-    print(f"Leaves in the final tree (left-to-right): {[leaf.label for leaf in leaves]}")

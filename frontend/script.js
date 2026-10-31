@@ -1,7 +1,12 @@
-const API_BASE_URL = "http://127.0.0.1:5000";           // Should be "https://minimalist-validator.onrender.com"
+const API_BASE_URL = "https://minimalist-validator.onrender.com";
 
 
 function serializeNode(element){
+    /**
+     * Constructs a dictionary describing an input node, including its type (terminal/non-terminal), its text/label, its trace and selection status, and the word/children if relevant.
+     * @param {HTMLElement} element - The DOM element representing the syntactic node.
+     * @returns {Object} - A serialized dictionary representation of the node to be passed to the backend.
+    */
     const isSelected = element.classList.contains('selected');
     if(element.classList.contains('lexical-item')){
         const labelElement = element.querySelector('.syntax-label');
@@ -33,12 +38,15 @@ function serializeNode(element){
     }
 }
 
-// Calculates the closest element to the right of the mouse cursor on the X-axis
 function getDragAfterElement(container, x) {
     /**
-     * selecting all the lexical-item/tree-node that are *direct children* of the current scope (via > operator)
-     * and spreading it into an array (via ... operator)
+     * Calculates the closest draggable element to the right of the mouse cursor on the X-axis
+     * @param {HTMLElement} container - The DOM element acting as the drop zone containing the draggable item.
+     * @param {number} x - The current X-coordinate of the mouse cursor.
+     * @returns {HTMLElement|undefined} The closest DOM element immediately to the right of the cursor, or undefined if the cursor is further right than all elements.
      */
+    
+    //selecting all the lexical-item/tree-node that are *direct children* of the current scope (via > operator) and spreading it into an array (via ... operator)
     const draggableElements = [...container.querySelectorAll(':scope > .lexical-item, :scope > .tree-node')];
 
     /**
@@ -58,6 +66,9 @@ function getDragAfterElement(container, x) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+/**
+ * SETUP OF LEXICAL ITEMS AND CANVAS 
+ */
 
 //Finding all items with the class "lexical-item"
 const lexicalItems = document.querySelectorAll('.lexical-item');
@@ -198,9 +209,9 @@ const mergeBtn = document.getElementById("merge-btn");
     })
  })
 
-// ==========================================
-// ADJOIN BUTTON
-// ==========================================
+/**
+ * ADJOIN BUTTON
+ */
 const adjoinBtn = document.getElementById("adjoin-btn");
 
 adjoinBtn.addEventListener('click', () => {
@@ -555,9 +566,9 @@ deleteBtn.addEventListener('click', () => {
     }
 });
 
-// ==========================================
-// EXPORT TO JSON
-// ==========================================
+/**
+ * EXPORT TO JSON BUTTON
+ */
 const exportJsonBtn = document.getElementById('export-json-btn');
 
 exportJsonBtn.addEventListener('click', () => {
@@ -590,9 +601,9 @@ exportJsonBtn.addEventListener('click', () => {
     statusText.style.color = "#333";
 });
 
-// ==========================================
-// EXPORT TO LATEX (FOREST PACKAGE)
-// ==========================================
+/**
+ * EXPORT TO LATEX BUTTON
+ */
 const exportLatexBtn = document.getElementById('export-latex-btn');
 
 // Helper to escape LaTeX special characters
@@ -687,9 +698,9 @@ exportLatexBtn.addEventListener('click', () => {
     });
 });
 
-// ==========================================
-// KEYBOARD SHORTCUTS
-// ==========================================
+/**
+ * SETTING UP KEYBOARD SHORTCUTS
+ */
 document.addEventListener('keydown', (event) => {
     // Guard clause: Do not trigger shortcuts if the user is typing in a word input field
     if (event.target.tagName.toLowerCase() === 'input') {

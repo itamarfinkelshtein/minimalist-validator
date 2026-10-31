@@ -24,6 +24,17 @@ header {
     align-items: center;
 }
 
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-logo {
+    height: 40px;
+    width: auto;
+}
+
 .workspace {
     display: flex;
     flex: 1;

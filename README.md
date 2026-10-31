@@ -1,31 +1,34 @@
-# Minimalist Program Syntax Engine & LF Validator
+# <img src="frontend/logo.svg" alt="Minimalist Validator Logo" width="45" align="center"> Minimal Program Validator
 
-An interactive, full-stack computational engine that operationalizes generative syntax under Noam Chomsky's **Minimalist Program**. 
+The Minimalist Validator is an interactive, full-stack computational engine that allows users to practice and generate basic syntax trees, as described by Chomsky's **[Minimalist Program](https://en.wikipedia.org/wiki/Minimalist_program)**.
 
-The application translates abstract syntactic operations into formal graph-theoretic algorithms. Users construct syntactic derivations via an interactive drag-and-drop workspace, inspect bottom-up tree generation, execute probe-goal feature valuing, perform internal merge with trace preservation, and validate whether derivations converge at **Logical Form (LF)**.
-
----
-
-## Theoretical Foundations & Architecture
-
-The engine bridges formal linguistic theory with computer science data structures:
-
-* **Syntactic Objects as Graphs**: Trees are modeled as binary Directed Acyclic Graphs (DAGs) using a custom `Node` class.
-* **External Merge**: Merges two independent roots into a binary branching structure. Selectional features (e.g., `[uD]`, `[uv]`, `[uC]`) are evaluated and checked strictly under sisterhood conditions.
-* **Internal Merge / Move**: Clones an extraction goal into the root's Specifier position. The base copy is replaced with an inert structural trace (`_t`) that retains its categorical identity for selection while shedding A-position features to prevent intervention effects.
-* **Agree & C-Command Traversal**: Probes initiate a Depth-First Search (DFS) strictly over their c-command domain (sister's descendants). The traversal enforces strict structural hierarchy: Specifiers precede Complements to preserve Relativized Minimality.
-* **Feature Percolation**: Models Determiner Phrases (DPs) where interpretable $\varphi$-features on lexical nouns percolate up to the maximal projection of $D$ to be visible for higher agreement probes.
-* **LF Convergence**: Traverses the derived tree to ensure the Principle of Full Interpretation holds: derivations converge if and only if all uninterpretable features (`uF`) are checked.
+Drag lexical items from the lexicon into the canvas, construct the syntactic tree from the buttom up, and validate convergence at Logical Form in a simple and intuitive manner.
 
 ---
+
+## What's behind the scenes, and how to use the engine?
+
+The engine model syntax trees as DAGs, using a custom linguistic `Node` class.
+* **Lexicon**: Drag any lexical item from the lexicon on the left into the canvas. You can also write the specific word/phonology of the lexical item, if it is not null. Each lexical item has its **category** (e.g., `D`, `Adv` or `v`) and a list of its **features**. The features are either interpretable (*$\varphi$-featuers*) or uninterpretable (which are marked with the prefix `u`). In order for the sentence to converge at LF, all uninterpretable features must be **checked**.
+* **(External) Merge**: Select two independent nodes by clicking on them, then click the **Merge** button. If one node has an active selectional feature (i.e., an unchecked, uninterpretable category feature) that matches the other node's category (e.g., Merging a `D [uN]` node with a `N` node), the first node (the *head*) will select the second one (the *complement*) and check its own uninterpretable category feature. The two nodes will then acquire a single parent **phrase** node above them, whose features will be mainly percolated from the head node.
+* **Adjoin**: Select two independant phrasal nodes (e.g., a `VP` and a `PP`), where one is either a `PP`, an `AP` or an`AdvP` (you can also choose a regular `A` or `Adv` and the engine will automatically project it!), then click the **Adjoin** button. The two nodes will then acquire a new phrasal node whose category and features are percolated from the other node. This operation does not check any uninterpretable features.
+* **Agree**: Select a phrasal node whose head (SPEC position) is `T`, `D`, `v` or `P`, then click the **Agree** button. The engine will initiate a DFS over the head's C-command domain (i.e., the complement and its descendants), in Pre-Order traversal, until it finds a valid goal that the head needs. If it finds one, the head will copy the necessary values of the goal, and according to the head's type, assign the goal its grammatical case. This operation checks $\varphi$-features and case features.
+* **Internal Merge (Move)**: Select a node inside a certain domain, then click the **Move** button. The node will move out of the tree, merge with the parent of the entire domain (in SPEC position) and leave a trace copy of itself in its original position. This operation does not check any uninterpretable features.
+* **Delete/Unmerge & Reset**: Delete a specific node, a full domain, or the wipe the entire canvas clean.
+* **Validate Logical Form**: After you create the entire tree, click the **Validate Logical Form** button. The engine will then traverse the entire syntax tree (from buttom up) and verify that every uninterpretable feature is checked. If all features pass the test, the sentence converges at LF.
+* **Export JSON & Copy LaTeX**: Export the tree into a JSON dictionary format for future use, or generate LaTeX code of the tree (requires `forest`/TikZ package afterwards).
+---
+
+## How to run the engine?
+
+The engine runs on [https://itamarfinkelshtein.github.io/minimalist-validator](https://itamarfinkelshtein.github.io/minimalist-validator). The backend uses Render, which currently spins down with inactivity, so the first operation might take up to a minute to load (after which the operations will be instant).
 
 ## Tech Stack
 
-* **Backend**: Python 3, Flask, Flask-CORS
+* **Backend**: Python 3, Flask, Flask-CORS, Gunicorn (WSGI server)
 * **Frontend**: Vanilla HTML5, CSS3 (Flexbox architecture), Vanilla JavaScript (Drag and Drop API, Fetch API)
 * **Serialization & Export**: Recursive JSON tree encoder/decoder preserving specifier/complement branch geometry, alongside a Pre-Order Traversal LaTeX generator that maps visual objects directly to `forest`/TikZ syntax.
-
----
+* **Deployment**: Render (REST API backend) and GitHub Pages (Frontend static hosting)
 
 ## Project Structure
 
@@ -36,6 +39,7 @@ minimalist-validator/
 │   ├── app.py              # Flask REST API endpoints & tree reconstruction
 │   ├── lexicon.py          # Feature and LexicalItem data structures
 │   ├── operations.py       # Core generative operations (Merge, Agree, Move)
+│   ├── requirements.txt    # Python dependencies including Gunicorn for production
 │   ├── tree.py             # Binary Node graph logic & C-command domain computation
 │   └── validator.py        # LF convergence inspection algorithm
 │
@@ -44,32 +48,9 @@ minimalist-validator/
 │   ├── script.js           # DOM manipulation, API callers, JSON/LaTeX exporters
 │   └── styles.css          # Flexbox layout, horizontal tree scaffolding, UI styling
 │
+├── index.html              # Root meta-refresh redirect to frontend/index.html for static hosting
 └── README.md
 ```
-
----
-
-## Setup & Local Run
-
-### Prerequisites
-* Python 3.10+
-* Modern web browser (Chrome, Firefox, Edge)
-
-### 1. Start the Flask Backend
-```bash
-# Navigate to the backend directory
-cd backend
-
-# Install dependencies if not already installed
-pip install flask flask-cors
-
-# Run the API server
-python app.py
-```
-The backend server runs locally on `http://127.0.0.1:5000`.
-
-### 2. Launch the Frontend
-Open `frontend/index.html` directly in your browser, or serve it via a simple static file server.
 
 ---
 
@@ -92,3 +73,33 @@ Open `frontend/index.html` directly in your browser, or serve it via a simple st
 3. Merge matrix `V [uC]` with the embedded `CP` $\rightarrow$ Forms matrix `VP`.
 4. Construct matrix `vP` shell with subject `DP [1sg]`, merge matrix `T`, execute matrix **Agree** and **Move**.
 5. **Validate LF** $\rightarrow$ Validates matrix clause and embedded clause simultaneously.
+
+### Prepositional Adjunction (vP Modification)
+
+*Sentence: "John ate apples in the kitchen"*
+
+1. Build the adjunct: Merge `P [uD]` ("in") with `DP` ("the kitchen") $\rightarrow$ Forms `PP`.
+2. Run **Agree** on `P` $\rightarrow$ Assigns Oblique (`obl`) case to its `DP` complement.
+3. Build the core: Merge `V [uD]` with object `DP` ("apples") $\rightarrow$ Forms `VP`.
+4. Merge `v [uV, uD, uphi]` with `VP` $\rightarrow$ Checks `[uV]`, leaving selectional features for the subject.
+5. Select `PP` and `vP`, then run **Adjoin** $\rightarrow$ Creates a two-segment `vP` structure containing the spatial modifier.
+6. Merge subject `DP` ("John") with the highest `vP` segment $\rightarrow$ Forms the complete `vP`.
+7. Run **Agree** on `v` $\rightarrow$ Probes the object, values $\varphi$-features, and assigns Accusative case.
+8. Merge `T [u , uv]` with the adjoined `vP` $\rightarrow$ Forms `TP`.
+9. Run **Agree** on `T` $\rightarrow$ Probes the subject, values $\varphi$-features, and assigns Nominative case.
+10. Run **Internal Merge (Move)** on the subject $\rightarrow$ Elevates subject over the adjunct to Spec-TP.
+11. **Validate LF** $\rightarrow$ Converges.
+
+---
+
+## What's next?
+
+This engine is still very basic. Some of the next features to be added are:
+- [ ] Allowing for different types of `v` (unaccusative, passive, etc.).
+- [ ] Adding a <code>C<sub>Q</sub></code> type for questions.
+- [ ] Visually illustrate operations such as feature-checking and movement.
+- [ ] Apply cyclicity constraints for convegence at LF.
+- [ ] Add dynamic numeration options.
+
+## Contact me
+ Found a bug/innacuracy? Have a suggestion? Contact me on [Finkelshtein.Itamar@gmail.com](Finkelshtein.Itamar@gmail.com)
