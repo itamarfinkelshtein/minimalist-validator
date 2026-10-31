@@ -1,4 +1,4 @@
-# <img src="frontend/logo.svg" alt="Minimalist Validator Logo" width="45" align="center"> Minimal Program Validator
+# <img src="frontend/logo.svg" alt="Minimalist Validator Logo" width="45" align="center"> Minimalist Program Validator
 
 The Minimalist Validator is an interactive, full-stack computational engine that allows users to practice and generate basic syntax trees, as described by Chomsky's **[Minimalist Program](https://en.wikipedia.org/wiki/Minimalist_program)**.
 
