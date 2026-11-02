@@ -68,6 +68,18 @@ function getDragAfterElement(container, x) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+window.addEventListener('DOMContentLoaded', () => {
+    const statusEl = document.getElementById('status-text');
+    fetch(`${API_BASE_URL}/api/status`)
+        .then(res => {
+            if (res.ok) {
+                statusEl.textContent = 'Connected!';
+                statusEl.style.color = 'LawnGreen';
+            }
+        })
+        .catch(() => statusEl.textContent = 'Connection Error');
+});
+
 /**
  * SETUP OF LEXICAL ITEMS AND CANVAS 
  */
