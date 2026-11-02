@@ -74,7 +74,7 @@ minimalist-validator/
 2. **Merge** `C [uT]` (*that*) with embedded `TP` $\rightarrow$ Forms embedded `CP`.
 3. **Merge** matrix `V [uC]` (*know*) with the embedded `CP` $\rightarrow$ Forms matrix `VP`.
 4. **Merge** `v [uV, uD]` (*+tran*) with the matrix `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]` and forms matrix `vP`. (No need to agree).
-5. **Merge** `D [uN]` (*$\emptyset$*) with `N [1sg, ucase]` (*I*) $\rightarrow$ Forms  matrix subject `DP`.
+5. **Merge** `D [uN]` (*∅*) with `N [1sg, ucase]` (*I*) $\rightarrow$ Forms  matrix subject `DP`.
 6. **Merge** matrix subject `DP` with matrix `vP` $\rightarrow$ forms full transitive vP.
 7. **MERGE** `T [uφ, uv]` (*+PRES*) with `vP` $\rightarrow$ Forms `TP`.
 8. Select `TP` and click **Agree** $\rightarrow$ Assigns `NOM` case to `DP` *I* and its $\varphi$-features, `1sg` to `T`.
