@@ -20,7 +20,8 @@ function serializeNode(element){
             text : nodeText,
             word : wordText,
             selected : isSelected,
-            isTrace : element.classList.contains('trace-node') || nodeText.includes('_t')
+            isTrace : element.classList.contains('trace-node') || nodeText.includes('_t'),
+            id: element.getAttribute('data-node-id') || null
         };
     }
     if(element.classList.contains('tree-node')){
@@ -33,7 +34,8 @@ function serializeNode(element){
             isTrace : labelText.includes('_t'),
             left : serializeNode(children[0]),
             right : serializeNode(children[1]),
-            selected : isSelected
+            selected : isSelected,
+            id: element.getAttribute('data-node-id') || null
         };
     }
 }
@@ -272,9 +274,8 @@ adjoinBtn.addEventListener('click', () => {
  * AGREE BUTTON
  */
 const agreeBtn = document.getElementById('agree-btn');
-
 agreeBtn.addEventListener('click', () => {
-    statusText.innerText = "Initiaing Agree...";
+    statusText.innerText = "Initiating Agree...";
     statusText.style.color = "#333";
     
     const selectedNodes = document.querySelectorAll('.lexical-item.selected, .tree-node.selected');
@@ -283,73 +284,60 @@ agreeBtn.addEventListener('click', () => {
         statusText.style.color = "red";
         return;
     }
-
+    
     const probeNode = selectedNodes[0];
+    
+    // 1. Inject Temporary IDs
+    let tempId = 1;
+    probeNode.setAttribute('data-node-id', tempId++);
+    const descendants = probeNode.querySelectorAll('.lexical-item, .tree-node');
+    descendants.forEach(el => el.setAttribute('data-node-id', tempId++));
+
     const payload = {tree: serializeNode(probeNode)};
 
     fetch(`${API_BASE_URL}/api/agree`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     })
     .then(async response => {
         const data = await response.json();
-        if(!response.ok){
-            throw new Error(data.message);
-        }
+        if(!response.ok) throw new Error(data.message);
         return data;
     })
     .then(data => {
         statusText.innerText = data.message;
         statusText.style.color = "#27ae60";
 
-        // 1. Isolate the exact visual block for the Probe (the T head, not the TP container)
-        let visualProbe = probeNode;
-        if (probeNode.classList.contains('tree-node')) {
-            visualProbe = probeNode.querySelector('.lexical-item');
+        // 2. Exact DOM targeting based on ID updates
+        if (data.updates) {
+            data.updates.forEach(update => {
+                const el = document.querySelector(`[data-node-id="${update.id}"]`);
+                if (el) {
+                    const labelSpan = el.querySelector('.syntax-label') || el.querySelector('.node-label');
+                    if (labelSpan) {
+                        labelSpan.innerText = update.text;
+                    }
+                    
+                    // Highlight animation
+                    const visualBlock = el.classList.contains('lexical-item') ? el : el.querySelector('.lexical-item');
+                    if (visualBlock) {
+                        visualBlock.classList.add('highlight-agree');
+                        setTimeout(() => visualBlock.classList.remove('highlight-agree'), 2000);
+                    }
+                }
+            });
         }
-
-        // Update the text feature values
-        if (data.updated_text) {
-            const labelSpan = visualProbe.querySelector('.syntax-label');
-            if (labelSpan) {
-                labelSpan.innerText = data.updated_text;
-            } else {
-                visualProbe.innerText = data.updated_text;
-            }
-        }
-        
-        // 2. Isolate the exact visual block for the Goal and trigger the flash
-        if (data.goals && data.goals.length > 0) {
-            const allLabels = Array.from(document.querySelectorAll('.node-label, .syntax-label'));
-            const goalLabelElement = allLabels.find(el => el.innerText.includes(data.goals[0]));
-            
-            let visualGoal = null;
-            if (goalLabelElement) {
-                // If the goal is a terminal node, grab its block. If it's a projection, grab the purple label itself.
-                visualGoal = goalLabelElement.classList.contains('syntax-label') 
-                             ? goalLabelElement.closest('.lexical-item') 
-                             : goalLabelElement;
-            }
-            
-            // Apply the animation class to the specific colored blocks
-            visualProbe.classList.add('highlight-agree');
-            if (visualGoal) visualGoal.classList.add('highlight-agree');
-            
-            // Remove the class after the 1.5s animation finishes
-            setTimeout(() => {
-                visualProbe.classList.remove('highlight-agree');
-                if (visualGoal) visualGoal.classList.remove('highlight-agree');
-            }, 2000);
-        }
-
         probeNode.classList.remove('selected');
     })
     .catch(error => {
         statusText.innerText = error.message;
         statusText.style.color = "red";
+    })
+    .finally(() => {
+        // 3. Cleanup IDs so subsequent structural modifications are unaffected
+        probeNode.removeAttribute('data-node-id');
+        descendants.forEach(el => el.removeAttribute('data-node-id'));
     });
 });
 

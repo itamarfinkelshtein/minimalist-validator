@@ -1,4 +1,4 @@
-# <img src="frontend/logo.svg" alt="Minimalist Validator Logo" width="45" align="center"> Minimal Program Validator
+# <img src="frontend/logo.svg" alt="Minimalist Validator Logo" width="45" align="center"> Minimalist Program Validator
 
 The Minimalist Validator is an interactive, full-stack computational engine that allows users to practice and generate basic syntax trees, as described by Chomsky's **[Minimalist Program](https://en.wikipedia.org/wiki/Minimalist_program)**.
 
@@ -58,37 +58,45 @@ minimalist-validator/
 
 ### Transitive Clause with Light $v$ Shell
 *Sentence: "John ate apples"*
-1. Merge `V [uD]` with `DP [3sg]` $\rightarrow$ Forms `VP`.
-2. Merge `v [uV, uD]` with `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]`.
-3. Merge `DP [3sg]` (Subject) with `vP` $\rightarrow$ Forms full transitive `vP`.
-4. Merge `T [uφ, uv]` with `vP` $\rightarrow$ Forms `TP`.
-5. Run **Agree** on `T` $\rightarrow$ Probes down, values $\varphi$-features against the subject in SPEC `vP`.
-6. Run **Internal Merge** on the subject $\rightarrow$ Elevates subject to Spec-TP, leaving a trace `DP_t`.
-7. **Validate LF** $\rightarrow$ Converges.
+1. **Merge** `V [uD]` (*eat*) with `DP [3sg]` (*apples*) $\rightarrow$ Forms `VP`.
+2. **Merge** `v [uV, uD]` (*+tran*) with `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]` and forms `vP`.
+3. Select `vP` and cilck **Agree** $\rightarrow$ Assigns `ACC` case to `DP` *apples*.
+4. **Merge** `DP [3sg]` (*John*) with `vP` $\rightarrow$ Forms full transitive `vP`.
+5. **Merge** `T [uφ, uv]` (*+PAST*) with `vP` $\rightarrow$ Forms `TP`.
+6. Select `TP` and click **Agree** $\rightarrow$ Assigns `NOM` case to `DP` *John* and its $\varphi$-features, `3sg`, to `T`.
+7. Run **Internal Merge** on the subject `DP` *John* $\rightarrow$ Elevates subject to SPEC `TP`, leaving a trace `DP_t`.
+8. **Validate LF** $\rightarrow$ Converges ✅
+
 
 ### Recursive Complementizer Embedding
 *Sentence: "I know that John ate apples"*
 1. Construct embedded `TP` as above.
-2. Merge `C [uT]` with embedded `TP` $\rightarrow$ Forms embedded `CP`.
-3. Merge matrix `V [uC]` with the embedded `CP` $\rightarrow$ Forms matrix `VP`.
-4. Construct matrix `vP` shell with subject `DP [1sg]`, merge matrix `T`, execute matrix **Agree** and **Move**.
-5. **Validate LF** $\rightarrow$ Validates matrix clause and embedded clause simultaneously.
+2. **Merge** `C [uT]` (*that*) with embedded `TP` $\rightarrow$ Forms embedded `CP`.
+3. **Merge** matrix `V [uC]` (*know*) with the embedded `CP` $\rightarrow$ Forms matrix `VP`.
+4. **Merge** `v [uV, uD]` (*+tran*) with the matrix `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]` and forms matrix `vP`. (No need to agree).
+5. **Merge** `D [uN]` (*$\emptyset$*) with `N [1sg, ucase]` (*I*) $\rightarrow$ Forms  matrix subject `DP`.
+6. **Merge** matrix subject `DP` with matrix `vP` $\rightarrow$ forms full transitive vP.
+7. **MERGE** `T [uφ, uv]` (*+PRES*) with `vP` $\rightarrow$ Forms `TP`.
+8. Select `TP` and click **Agree** $\rightarrow$ Assigns `NOM` case to `DP` *I* and its $\varphi$-features, `1sg` to `T`.
+9. Run **Internal Merge** on the subject `DP` *I* $\rightarrow$ Elevates subject to SPEC `TP`, leaving a trace `DP_t`.
+10. **Validate LF** $\rightarrow$ Validates matrix clause and embedded clause simultaneously ✅
 
 ### Prepositional Adjunction (vP Modification)
 
 *Sentence: "John ate apples in the kitchen"*
 
-1. Build the adjunct: Merge `P [uD]` ("in") with `DP` ("the kitchen") $\rightarrow$ Forms `PP`.
-2. Run **Agree** on `P` $\rightarrow$ Assigns Oblique (`obl`) case to its `DP` complement.
-3. Build the core: Merge `V [uD]` with object `DP` ("apples") $\rightarrow$ Forms `VP`.
-4. Merge `v [uV, uD, uphi]` with `VP` $\rightarrow$ Checks `[uV]`, leaving selectional features for the subject.
-5. Select `PP` and `vP`, then run **Adjoin** $\rightarrow$ Creates a two-segment `vP` structure containing the spatial modifier.
-6. Merge subject `DP` ("John") with the highest `vP` segment $\rightarrow$ Forms the complete `vP`.
-7. Run **Agree** on `v` $\rightarrow$ Probes the object, values $\varphi$-features, and assigns Accusative case.
-8. Merge `T [u , uv]` with the adjoined `vP` $\rightarrow$ Forms `TP`.
-9. Run **Agree** on `T` $\rightarrow$ Probes the subject, values $\varphi$-features, and assigns Nominative case.
-10. Run **Internal Merge (Move)** on the subject $\rightarrow$ Elevates subject over the adjunct to Spec-TP.
-11. **Validate LF** $\rightarrow$ Converges.
+1. **Merge** `D [uN]` (*the*) with `N [3sg, ucase]` (*kitchen*) $\rightarrow$ Forms `DP`.
+2. **Merge** `P [uD]` (*in*) with `DP` $\rightarrow$ Forms `PP`.
+3. Select `PP` anc click **Agree** $\rightarrow$ Assigns `OBL` case to `DP` *the kitchen*.
+4. **Merge** `V [uD]` (*eat*) with `DP [3sg]` (*apples*) $\rightarrow$ Forms `VP`.
+5. **Merge** `v [uV, uD]` (*+tran*) with `VP` $\rightarrow$ Checks `[uV]`, leaves `[uD]` and forms `vP`.
+6. Select `vP` and cilck **Agree** $\rightarrow$ Assigns `ACC` case to `DP` *apples*.
+7. Select `vP` and `PP` and click **Adjoin** $\rightarrow$ Creates a two-segment `vP` structure containing the spatial modifier.
+8. **Merge** `DP [3sg]` (*John*) with `vP` $\rightarrow$ Forms full transitive `vP`.
+9. **Merge** `T [uφ, uv]` (*+PAST*) with `vP` $\rightarrow$ Forms `TP`.
+10. Select `TP` and click **Agree** $\rightarrow$ Assigns `NOM` case to `DP` *John* and its $\varphi$-features, `3sg`, to `T`.
+11. Run **Internal Merge** on the subject `DP` *John* $\rightarrow$ Elevates subject to SPEC `TP`, leaving a trace `DP_t`.
+12. **Validate LF** $\rightarrow$ Converges ✅
 
 ---
 
@@ -97,7 +105,8 @@ minimalist-validator/
 This engine is still very basic. Some of the next features to be added are:
 - [ ] Allowing for different types of `v` (unaccusative, passive, etc.).
 - [ ] Adding a <code>C<sub>Q</sub></code> type for questions.
-- [ ] Visually illustrate operations such as feature-checking and movement.
+- [ ] Visually illustrate operations such as feature-checking, case assignment and movement.
+- [ ] Add a responsive split-screen / mobile layout
 - [ ] Apply cyclicity constraints for convegence at LF.
 - [ ] Add dynamic numeration options.
 

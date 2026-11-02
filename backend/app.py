@@ -51,6 +51,10 @@ def parse_feature(raw_feat: str) -> Feature:
     if raw.lower() == "ucase":
         # This is an uninterpretable case feature that needs value.
         return Feature(type="case", val=None, interpretable=False)
+    if raw.lower().startswith("case:"):
+        feat = Feature(type="case", val=raw.lower().split(":")[1].strip(), interpretable=False)
+        feat.checked = True
+        return feat
         
     if raw.startswith("u"):
         # Fallback option for uF: the feature is a selection feature
@@ -110,6 +114,7 @@ def build_tree_from_json(node_dict: dict) -> Node:
             -'right' (For non-terminal nodes, a dict representing the right subtree of the node)
             -'isTrace' (True if the node is marked as a trace, False otherwise)
             -'selected' (True is the node is currently highlighted by the user (specifically for the Move operation), False otherwise)
+            'id' (A numerical ID for necessary operations)
     
     Returns:
         Node: The root of the constructed syntactic tree.
@@ -154,6 +159,7 @@ def build_tree_from_json(node_dict: dict) -> Node:
             node.is_trace = True
             node.features = [f for f in node.features if f.type == "category"]
             
+    node.node_id = node_dict.get('id')
     node.is_target = node_dict.get('selected', False)
     return node
 
@@ -324,56 +330,65 @@ def execute_adjoin():
         }), 200
     except ValueError as e:
         return jsonify({"status": "error", "message": f"CRASH: {str(e)}"}), 400
+
     
 @app.route('/api/agree', methods=['POST'])
 def execute_agree():
     """
     Executing the Agree operation using data from the frontend.
-        
+            
     Returns:
         JSON: A json object containing a status report, a message, and the updated text on the probe (including its updated features) and the specific node the probe found (for UI purposes).
     """
 
-    # Receiving the data and extracting the subtree of the probe's parent node for traversing.
     payload = request.get_json()
     tree_data = payload.get('tree')
-
     if not tree_data:
-        return jsonify({
-            "status": "error",
-            "message": "CRASH: No tree provided for Agree operation"
-        }), 400
+        return jsonify({"status": "error", "message": "CRASH: No tree provided"}), 400
 
     try:
-        # Attempting to execute the agree operation
         selected_node = build_tree_from_json(tree_data)
         probe_node = selected_node.left if not selected_node.is_terminal() else selected_node
-        goals_found = agree(probe = probe_node)
 
-        # Updating the node's text to reflect the changes in its features.
-        feat_strings = []
-        for f in probe_node.features:
-            if f.type == "category":
-                continue
-            if f.type == "phi" and not f.interpretable:
-                feat_strings.append(f"uφ:{f.val}" if f.val else "uφ")
-            elif not f.interpretable:
-                feat_strings.append(f"u{f.val}")
-            else:
-                feat_strings.append(f.val)         
-        updated_text = f"{probe_node.label} [{', '.join(feat_strings)}]"
+        def format_node_text(node):
+            g_feats = []
+            for f in node.features:
+                if f.type == "category": continue
+                if f.type == "case":
+                    if f.type == "case":
+                        g_feats.append(f"case:{f.val.upper()}" if f.checked else "ucase")
+                elif f.type == "phi" and not f.interpretable:
+                    g_feats.append(f"uφ:{f.val}" if f.val else "uφ")
+                elif not f.interpretable:
+                    g_feats.append(f"u{f.val}")
+                else:
+                    g_feats.append(f.val)
+            return f"{node.label} [{', '.join(g_feats)}]"
+
+        # 1. State Pre-Agree: Map texts by ID
+        pre_state = {n.node_id: format_node_text(n) for n in selected_node.get_descendants() if n.node_id}
+
+        # 2. Execute theoretical operation
+        goals_found = agree(probe=probe_node)
+
+        # 3. State Post-Agree: Compare texts by ID and collect updates
+        updates = []
+        for n in selected_node.get_descendants():
+            if not n.node_id: continue
+            new_text = format_node_text(n)
+            if pre_state.get(n.node_id) != new_text:
+                updates.append({
+                    "id": n.node_id,
+                    "text": new_text
+                })
+
         return jsonify({
             "status": "success",
-            "message": f"AGREE SUCESS: Probe '{probe_node.label}' successfully checked its features",
-            "updated_text": updated_text,
-            "goals": goals_found
+            "message": f"AGREE SUCCESS: Probe '{probe_node.label}' successfully checked its features",
+            "updates": updates
         }), 200
     except ValueError as e:
-        return jsonify({
-            "status": "error",
-            "message": f"CRASH: {str(e)}"
-        }), 400
-
+        return jsonify({"status": "error", "message": f"CRASH: {str(e)}"}), 400
 
 @app.route('/api/move', methods=['POST'])
 def execute_move():
