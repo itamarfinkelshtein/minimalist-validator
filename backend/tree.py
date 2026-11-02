@@ -12,14 +12,16 @@ class Node:
         label (str): The node's label (e.g., 'VP', 'N'). This is not to be confused with the text/phonology of terminal nodes.
         parent (Node): Pointer to the parent of the node.
         is_trace (bool): Whether the node is part of a trace of movement.
+        node_id (int): A numeral id for necessary operations.
     """
-    def __init__(self, features: list[Feature], left = None, right = None, label: str = "", parent = None):
+    def __init__(self, features: list[Feature], left = None, right = None, label: str = "", parent = None, node_id = None):
         self.features = features
         self.left = left
         self.right = right
         self.label = label
         self.parent = parent
         self.is_trace = False                   # All nodes are in their base position by default.
+        self.node_id = node_id
 
     def is_terminal(self) -> bool:
         """
