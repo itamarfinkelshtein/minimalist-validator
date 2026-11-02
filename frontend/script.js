@@ -74,8 +74,7 @@ window.addEventListener('DOMContentLoaded', () => {
         .then(res => {
             if (res.ok) {
                 statusEl.textContent = 'Connected!';
-                statusEl.style.color = '#155724'; // Success green
-                setTimeout(() => statusEl.style.display = 'none', 3000);
+                statusEl.style.color = 'LawnGreen';
             }
         })
         .catch(() => statusEl.textContent = 'Connection Error');
